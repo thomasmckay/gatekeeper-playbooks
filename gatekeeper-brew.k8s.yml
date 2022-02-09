@@ -1,0 +1,59 @@
+- hosts: localhost
+  gather_facts: False
+  collections:
+    - kubernetes.core
+  tasks:
+  - name: Check for IIB variable definition
+    assert:
+      that:
+        - iib_number is defined
+
+  - name: Disable all default operator sources
+    shell:
+      cmd: |
+        oc patch OperatorHub cluster --type json -p '[{"op": "add", "path": "/spec/disableAllDefaultSources", "value": true}]'
+
+  - name: Set brew.registry.redhat.io pull secret
+    vars:
+      brew_username: "{{ lookup('env', 'BREW_USERNAME') }}"
+      brew_password: "{{ lookup('env', 'BREW_PASSWORD') }}"
+    shell:
+      cmd: |
+        oc get secret/pull-secret -n openshift-config -o json | jq -r '.data.".dockerconfigjson"' | base64 -d | json_reformat  > cluster-authfile.json
+        podman login --authfile cluster-authfile.json --username "{{ brew_username }}" --password "{{ brew_password}}" brew.registry.redhat.io
+        oc set data secret/pull-secret -n openshift-config --from-file=.dockerconfigjson=cluster-authfile.json
+
+  - name: Create brew-registry ImageContentSourcePolicy
+    k8s:
+      state: present
+      definition:
+        apiVersion: operator.openshift.io/v1alpha1
+        kind: ImageContentSourcePolicy
+        metadata:
+          name: brew-registry
+        spec:
+          repositoryDigestMirrors:
+          - mirrors:
+            - brew.registry.redhat.io
+            source: registry.redhat.io
+          - mirrors:
+            - brew.registry.redhat.io
+            source: registry.stage.redhat.io
+          - mirrors:
+            - brew.registry.redhat.io
+            source: registry-proxy.engineering.redhat.com
+
+  - name: Create brew-operator-catalog CatalogSource
+    k8s:
+      state: present
+      definition:
+        apiVersion: operators.coreos.com/v1alpha1
+        kind: CatalogSource
+        metadata:
+          name: brew-operator-catalog
+          namespace: openshift-marketplace
+        spec:
+          sourceType: grpc
+          image: brew.registry.redhat.io/rh-osbs/iib:169894
+          displayName: Brew Testing Operator Catalog
+          publisher: grpc

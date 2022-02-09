@@ -1,0 +1,74 @@
+- hosts: localhost
+  gather_facts: False
+  collections:
+    - kubernetes.core
+  tasks:
+  - name: Get namespaces
+    kubernetes.core.k8s_info:
+      kind: Namespace
+    register: namespace_list
+  - name: Get namespace names
+    set_fact:
+      namespaces: "{{ namespace_list.resources | map(attribute='metadata') | map(attribute='name') | list }}"
+  - name: Filter "openshift" namespaces
+    set_fact:
+      openshift_filtered_namespaces: "{{ namespaces | select('match', 'openshift') | select('string') | list }}"
+  - name: Filter "kube" namespaces
+    set_fact:
+      kube_filtered_namespaces: "{{ namespaces | select('match', 'kube') | select('string') | list }}"
+  - name: All excluded namespaces
+    set_fact:
+      excluded_namespaces: "{{ openshift_filtered_namespaces + kube_filtered_namespaces }}"
+  - name: Existing container args
+    set_fact:
+      container_args:
+        - '--port=8443'
+        - '--logtostderr'
+        - '--operation=webhook'
+        - '--enable-mutation=true'
+        - '--log-level=DEBUG'
+        - '--emit-admission-events=true'
+  - name: Add excluded namespaces to container args
+    set_fact:
+      container_args: "{{ container_args + [ '--exempt-namespace=' + item ] }}"
+    with_items: "{{ excluded_namespaces }}"
+
+  # - name: print filtered
+  #   ansible.builtin.debug:
+  #     # msg: "{{ excluded_namespaces | join(',') }}"
+  #     msg: "{{ container_args }}"
+
+  - name: Update gatekeeper deployment
+    k8s:
+      state: patched
+      merge_type:
+        - strategic-merge
+      kind: Deployment
+      name: gatekeeper-controller-manager
+      namespace: openshift-gatekeeper-system
+      definition:
+        spec:
+          template:
+            spec:
+              containers:
+                - name: manager
+                  args:
+                    "{{ container_args }}"
+                    # - '--port=8443'
+                    # - '--logtostderr'
+                    # - '--exempt-namespace={{ excluded_namespaces | join(",") }}'
+                    # - '--operation=webhook'
+                    # - '--enable-mutation=true'
+                    # - '--log-level=DEBUG'
+                    # - '--emit-admission-events=true'
+
+  - name: Add labels to excluded namespaces
+    k8s:
+      state: patched
+      kind: Namespace
+      name: "{{ item }}"
+      definition:
+        metadata:
+          labels:
+            admission.gatekeeper.sh/ignore: always
+    with_items: "{{ excluded_namespaces }}"

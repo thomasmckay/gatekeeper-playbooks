@@ -1,0 +1,52 @@
+---
+- hosts: localhost
+  collections:
+    - kubernetes.core
+  vars:
+    # ansible-playbook -e '{"names": ["alpha", "beta"]}' ./httpd-deployment.k8s.yaml
+    names:
+      - alpha
+      - beta
+  tasks:
+  - name: httpd namespace
+    k8s:
+      state: present
+      definition:
+        apiVersion: v1
+        kind: Namespace
+        metadata:
+          name: "gatekeeper-httpd-{{ item }}"
+          labels:
+            name: "gatekeeper-{{ item }}"
+    with_items:
+      "{{ names }}"
+  - name: httpd deployment
+    k8s:
+      state: present
+      definition:
+        apiVersion: apps/v1
+        kind: Deployment
+        metadata:
+          name: "apache-{{ item }}"
+          namespace: "gatekeeper-httpd-{{ item }}"
+          labels:
+            role: webserver
+            name: "gatekeeper-{{ item }}"
+        spec:
+          replicas: 1
+          selector:
+            matchLabels:
+              role: webserver
+          template:
+            metadata:
+              labels:
+                role: webserver
+            spec:
+              containers:
+              - name: frontend
+                image: registry.redhat.io/rhel8/httpd-24:1
+                ports:
+                - containerPort: 80
+    with_items:
+      "{{ names }}"
+
