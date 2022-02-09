@@ -1,0 +1,33 @@
+---
+- hosts: localhost
+  collections:
+    - kubernetes.core
+  tasks:
+  - name: gatekeeper-policies-namespace
+    k8s:
+      state: present
+      definition:
+        apiVersion: policy.open-cluster-management.io/v1
+        kind: Policy
+        metadata:
+          name: gatekeeper-policies-namespace
+          namespace: openshift-gatekeeper-system
+        spec:
+          remediationAction: enforce
+          disabled: false
+          policy-templates:
+          - objectDefinition:
+              apiVersion: policy.open-cluster-management.io/v1
+              kind: ConfigurationPolicy
+              metadata:
+                name: gatekeeper-policies-namespace
+              spec:
+                remediationAction: inform
+                severity: high
+                object-templates:
+                  - complianceType: musthave
+                    objectDefinition:
+                      apiVersion: v1
+                      kind: Namespace
+                      metadata:
+                        name: gatekeeper-policies-namespace
