@@ -10,12 +10,12 @@
         apiVersion: templates.gatekeeper.sh/v1beta1
         kind: ConstraintTemplate
         metadata:
-          name: namespace-must-have-label
+          name: gatekeeperrequiredlabels
         spec:
           crd:
             spec:
               names:
-                kind: namespace-must-have-label
+                kind: GatekeeperRequiredLabels
               validation:
                 # Schema for the `parameters` field
                 openAPIV3Schema:
@@ -26,24 +26,24 @@
           targets:
             - target: admission.k8s.gatekeeper.sh
               rego: |
-                package k8srequiredlabels
+                package gatekeeperrequiredlabels
 
                 violation[{"msg": msg, "details": {"missing_labels": missing}}] {
                   provided := {label | input.review.object.metadata.labels[label]}
                   required := {label | label := input.parameters.labels[_]}
-                  ns := input.review.object.metadata.namespace
                   missing := required - provided
                   count(missing) > 0
-                  msg := sprintf("you must provide labels in namespace \"%s\": %v", [ns, missing])
+                  msg := sprintf("you must provide labels: %v", [missing])
                 }
+
   - name: Namespace Label Constraint
     k8s:
       state: present
       definition:
         apiVersion: constraints.gatekeeper.sh/v1beta1
-        kind: namespace-must-have-label
+        kind: GatekeeperRequiredLabels
         metadata:
-          name: namespace-must-have-label
+          name: namespace-must-have-labels
         spec:
           enforcementAction: warn
           match:

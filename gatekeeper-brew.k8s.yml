@@ -54,6 +54,6 @@
           namespace: openshift-marketplace
         spec:
           sourceType: grpc
-          image: brew.registry.redhat.io/rh-osbs/iib:169894
+          image: "brew.registry.redhat.io/rh-osbs/iib:{{ iib_number }}"
           displayName: Brew Testing Operator Catalog
           publisher: grpc
