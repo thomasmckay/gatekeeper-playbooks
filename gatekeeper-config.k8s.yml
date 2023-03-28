@@ -54,13 +54,9 @@
                 - name: manager
                   args:
                     "{{ container_args }}"
-                    # - '--port=8443'
-                    # - '--logtostderr'
-                    # - '--exempt-namespace={{ excluded_namespaces | join(",") }}'
-                    # - '--operation=webhook'
-                    # - '--enable-mutation=true'
-                    # - '--log-level=DEBUG'
-                    # - '--emit-admission-events=true'
+      wait: yes
+      wait_sleep: 5
+      wait_timeout: 180
 
   - name: Add labels to excluded namespaces
     k8s:

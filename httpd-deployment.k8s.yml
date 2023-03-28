@@ -3,7 +3,7 @@
   collections:
     - kubernetes.core
   vars:
-    # ansible-playbook -e '{"names": ["alpha", "beta"]}' ./httpd-deployment.k8s.yaml
+    # ansible-playbook -e '{"names": ["alpha", "beta"]}' httpd-deployment.k8s.yml
     names:
       - alpha
       - beta
