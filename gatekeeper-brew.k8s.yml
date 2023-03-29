@@ -13,15 +13,15 @@
       cmd: |
         oc patch OperatorHub cluster --type json -p '[{"op": "add", "path": "/spec/disableAllDefaultSources", "value": true}]'
 
-  - name: Set brew.registry.redhat.io pull secret
-    vars:
-      brew_username: "{{ lookup('env', 'BREW_USERNAME') }}"
-      brew_password: "{{ lookup('env', 'BREW_PASSWORD') }}"
-    shell:
-      cmd: |
-        oc get secret/pull-secret -n openshift-config -o json | jq -r '.data.".dockerconfigjson"' | base64 -d | json_reformat  > cluster-authfile.json
-        podman login --authfile cluster-authfile.json --username "{{ brew_username }}" --password "{{ brew_password}}" brew.registry.redhat.io
-        oc set data secret/pull-secret -n openshift-config --from-file=.dockerconfigjson=cluster-authfile.json
+  # - name: Set brew.registry.redhat.io pull secret
+  #   vars:
+  #     brew_username: "{{ lookup('env', 'BREW_USERNAME') }}"
+  #     brew_password: "{{ lookup('env', 'BREW_PASSWORD') }}"
+  #   shell:
+  #     cmd: |
+  #       oc get secret/pull-secret -n openshift-config -o json | jq -r '.data.".dockerconfigjson"' | base64 -d | json_reformat  > cluster-authfile.json
+  #       podman login --authfile cluster-authfile.json --username "{{ brew_username }}" --password "{{ brew_password}}" brew.registry.redhat.io
+  #       oc set data secret/pull-secret -n openshift-config --from-file=.dockerconfigjson=cluster-authfile.json
 
   - name: Create brew-registry ImageContentSourcePolicy
     k8s:

@@ -1,0 +1,22 @@
+- hosts: localhost
+  gather_facts: False
+  collections:
+    - kubernetes.core
+  vars:
+    namespace_name: gatekeeper-system
+  tasks:
+  - name: Create namespace
+    k8s:
+      name: "{{ namespace_name }}"
+      api_version: v1
+      kind: Namespace
+      state: present
+
+  - name: Create ClusterRole and RoleBindings
+    shell:
+      cmd: |
+        oc create clusterrole gatekeeper-allow-anyuid-scc --verb=use --resource=securitycontextconstraints.security.openshift.io --resource-name=anyuid
+        oc create rolebinding gatekeeper-anyuid-scc --serviceaccount={{ namespace_name }}:gatekeeper-admin --clusterrole=gatekeeper-allow-anyuid-scc -n {{ namespace_name }}
+        oc create rolebinding gatekeeper-upgrade-crds-anyuid-scc --serviceaccount={{ namespace_name }}:gatekeeper-admin-upgrade-crds --clusterrole=gatekeeper-allow-anyuid-scc -n {{ namespace_name }}
+        oc create rolebinding gatekeeper-update-namespace-label-anyuid-scc --serviceaccount={{ namespace_name }}:gatekeeper-update-namespace-label --clusterrole=gatekeeper-allow-anyuid-scc -n {{ namespace_name }}
+

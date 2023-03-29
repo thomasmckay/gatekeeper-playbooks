@@ -2,6 +2,8 @@
   gather_facts: False
   collections:
     - kubernetes.core
+  vars:
+    - namespace_name: gatekeeper-system
   tasks:
   - name: Get namespaces
     kubernetes.core.k8s_info:
@@ -45,7 +47,7 @@
         - strategic-merge
       kind: Deployment
       name: gatekeeper-controller-manager
-      namespace: openshift-gatekeeper-system
+      namespace: gatekeeper-system
       definition:
         spec:
           template:

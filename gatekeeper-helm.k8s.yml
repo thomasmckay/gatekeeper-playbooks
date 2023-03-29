@@ -1,0 +1,17 @@
+- hosts: localhost
+  gather_facts: False
+  collections:
+    - kubernetes.core
+  vars:
+    namespace_name: gatekeeper-system
+    helm_chart: /home/thomasmckay/code/gatekeeper/charts/gatekeeper
+    values_file: gatekeeper-values.yml
+  tasks:
+  - name: Install
+    helm:
+      name: gatekeeper
+      chart_ref: "{{ helm_chart }}"
+      release_namespace: "{{ namespace_name }}"
+      create_namespace: false
+      values_files:
+        - "{{ values_file }}"

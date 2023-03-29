@@ -11,7 +11,7 @@
         kind: Policy
         metadata:
           name: gatekeeper-policies-namespace
-          namespace: openshift-gatekeeper-system
+          namespace: gatekeeper-system
         spec:
           remediationAction: enforce
           disabled: false
